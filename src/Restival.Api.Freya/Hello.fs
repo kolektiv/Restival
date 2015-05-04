@@ -3,7 +3,6 @@
 open System.Text
 open Chiron
 open Freya.Core
-open Freya.Core.Operators
 open Freya.Machine
 open Freya.Machine.Extensions.Http
 open Freya.Machine.Router
@@ -27,26 +26,27 @@ let inline encode resource =
     |> Json.format
     |> Encoding.UTF8.GetBytes
 
-// Properties
-
-let greeting =
-        fun name ->
-            match name with
-            | Some name -> { Message = sprintf "Hello %s!" name }
-            | _ -> { Message = "Hello World!" }
-    <!> Freya.getLensPartial (Route.atom "name")
-
 // Resources
 
+let greeting =
+    freya {
+        let! name = Freya.getLensPartial (Route.atom "name")
+
+        match name with
+        | Some name -> return { Message = sprintf "Hello %s!" name }
+        | _ -> return { Message = "Hello World!" } }
+
 let greetingOk _ =
-        fun greeting ->
-            { Data = encode greeting
-              Description =
+    freya {
+        let! data = greeting
+
+        return {
+            Data = encode data
+            Description =
                 { Charset = Some Charset.Utf8
                   Encodings = None
                   MediaType = Some MediaType.Json
-                  Languages = None } }
-    <!> greeting
+                  Languages = None } } }
 
 let greetingResource =
     freyaMachine {
